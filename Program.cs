@@ -12,86 +12,37 @@ namespace BridgeWebsUpload
 {
     public class Constants 
     {
-        public const string BridgeWebUrl = "https://www.bridgewebs.com/cgi-bin/bwom/bw.cgi?club=aceofclubs&pid=upload_results";
         public const string AceOfClubsClub = "aceofclubs";
-        public const string AceOfClubsPassword = "TheAce07!";
+        public const string AceOfClubsPassword = "redacted";
     }
     class Program
     {
         static void Main(string[] args)
-        {
-            var cookieVal = Login();
-            UploadData(cookieVal);
+        {            
+            UploadDataApi("20190215_1", @"c:\dir\acblFile", "acblFile", @"c:\dir\BwsFile", "BwsFile", @"c:\dir\PbnFile", "pbnFile");
         }
 
-        private static void UploadData(string cookieVal)
+        private static void UploadDataApi(string eventId, string pathToAcbl, string acblName, string pathToBws, string bwsName, string pathToPbn, string pbnName)
         {
-            const string url = "https://www.bridgewebs.com/cgi-bin/bwom/bw.cgi?club=aceofclubs&pid=upload_results";
+            const string url = "https://www.bridgewebs.com/cgi-bin/bwx/api.cgi?club=aceofclubs";
 
-            
             var content = new MultipartFormDataContent();
-            content.Add(new StreamContent(GetFileStream(@"d:\git\BridgeWebsUpload\190102.ACM")), "\"bridge_results\"", "190102.ACM");
-            content.Add(new StreamContent(GetFileStream(@"d:\git\BridgeWebsUpload\190102M.BWS")), "\"bridge_bws\"", "190102M.BWS");
-            content.Add(new StreamContent(GetFileStream(@"d:\git\BridgeWebsUpload\190102M.pbn")), "\"bridge_hands\"", "190102M.pbn");
-            content.Add(new StringContent("upload"), "\"bridge_button\"");
-            content.Add(new StringContent(Constants.AceOfClubsClub), "\"hidden_club\"");
-            content.Add(new StringContent("upload_results"), "\"hidden_pid\"");
-            content.Add(new StringContent("1"), "\"hidden_wd\"");
-            content.Add(new StringContent("1"), "\"menu_present\"");
-            content.Add(new StringContent("upload"), "\"option_last\"");
-            content.Add(new StringContent("upload"), "\"page_last\"");
-            content.Add(new StringContent("upload"), "\"popt\"");
-            content.Add(new StringContent(cookieVal.Split('&')[1]), "\"sessid\"");
-            content.Headers.Add("Cookie", cookieVal);
-            
+            content.Add(new StringContent(acblName), "\"acblname\"");
+            content.Add(new StreamContent(GetFileStream(pathToAcbl)), "\"acbldata\"");
+            content.Add(new StringContent(bwsName), "\"bwsname\"");
+            content.Add(new StreamContent(GetFileStream(pathToBws)), "\"bwsdata\"");
+            content.Add(new StringContent(pbnName), "\"dealname\"");
+            content.Add(new StreamContent(GetFileStream(pathToPbn)), "\"dealdata\"");
+            content.Add(new StringContent(Constants.AceOfClubsClub), "\"club\"");
+            content.Add(new StringContent(Constants.AceOfClubsPassword), "\"password\"");
+            content.Add(new StringContent(eventId), "\"20190208_1\"");
+            content.Add(new StringContent("upload"), "\"type\"");
+
             var client = new RestClient();
             
             var response = client.PostAsync(url, content).Result;
             Console.WriteLine(response.StatusCode);
             Console.WriteLine(response.Content.ReadAsStringAsync().Result);
-        }
-
-        private static string Login()
-        {
-            const string url = "https://www.bridgewebs.com/cgi-bin/bwom/bw.cgi?club=aceofclubs&pid=upload_results";
-            
-            using (var client = new RestClient())
-            {
-                var loginPageResponse = client.GetAsync(url).Result;
-                var cookieVal = string.Join("", loginPageResponse.Headers.GetValues("Set-Cookie").First().Split(" ")[0].TrimEnd(';', ' '));
-                var loginPayload = new FormUrlEncodedContent(new Dictionary<string,string> {
-                    {"bridge_password", Constants.AceOfClubsPassword},
-                    {"popt", "login"},
-                    {"hidden_club", Constants.AceOfClubsClub},
-                    {"sessid",  cookieVal.Split('&')[1]},
-                    {"hidden_wd", "1"},
-                    {"hidden_pid", "upload_results"},
-                    {"menu_present", "1"}
-                });
-                
-                try
-                {
-                    loginPayload.Headers.Add("Cookie", "cbwsec=" + cookieVal);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-                var result = client.PostAsync(url, loginPayload).Result;
-                cookieVal = string.Join("", result.Headers.GetValues("Set-Cookie").First().Split(" ")[0].TrimEnd(';', ' '));
-                return cookieVal;
-            }
-        }
-
-        private static string GetFileData(string path) 
-        {
-            using (var fs = File.Open(path, FileMode.Open))
-            using (var ms = new MemoryStream())
-            {
-                fs.CopyTo(ms);
-                var urlString = HttpUtility.UrlEncode(ms.ToArray());
-                return urlString;
-            }
         }
 
         private static FileStream GetFileStream(string path)
