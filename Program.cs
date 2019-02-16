@@ -13,13 +13,15 @@ namespace BridgeWebsUpload
     public class Constants 
     {
         public const string AceOfClubsClub = "aceofclubs";
-        public const string AceOfClubsPassword = "redacted";
+        public const string AceOfClubsPassword = "Redacted";
     }
     class Program
     {
         static void Main(string[] args)
         {            
-            UploadDataApi("20190215_1", @"c:\dir\acblFile", "acblFile", @"c:\dir\BwsFile", "BwsFile", @"c:\dir\PbnFile", "pbnFile");
+            UploadDataApi("1", @"D:\git\BridgeWebsUpload\190213.ACM", "190213.ACM", 
+                @"D:\git\BridgeWebsUpload\190213M.BWS", "190213M.BWS", @"D:\git\BridgeWebsUpload\190213M.pbn", "190213M.pbn");
+            GetCalendarData();
         }
 
         private static void UploadDataApi(string eventId, string pathToAcbl, string acblName, string pathToBws, string bwsName, string pathToPbn, string pbnName)
@@ -35,11 +37,29 @@ namespace BridgeWebsUpload
             content.Add(new StreamContent(GetFileStream(pathToPbn)), "\"dealdata\"");
             content.Add(new StringContent(Constants.AceOfClubsClub), "\"club\"");
             content.Add(new StringContent(Constants.AceOfClubsPassword), "\"password\"");
-            content.Add(new StringContent(eventId), "\"20190208_1\"");
+            content.Add(new StringContent(eventId), "\"event_id\"");
             content.Add(new StringContent("upload"), "\"type\"");
 
             var client = new RestClient();
             
+            var response = client.PostAsync(url, content).Result;
+            Console.WriteLine(response.StatusCode);
+            Console.WriteLine(response.Content.ReadAsStringAsync().Result);
+        }
+
+        private static void GetCalendarData()
+        {
+            const string url = "https://www.bridgewebs.com/cgi-bin/bwx/api.cgi?club=aceofclubs";
+
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(Constants.AceOfClubsClub), "\"club\"");
+            content.Add(new StringContent(Constants.AceOfClubsPassword), "\"password\"");
+            content.Add(new StringContent("upload"), "\"type\"");
+            content.Add(new StringContent("events"), "\"transfer\"");
+            content.Add(new StringContent("20190213"), "\"date\"");
+            content.Add(new StringContent("json"), "\"format\"");
+
+            var client = new RestClient();
             var response = client.PostAsync(url, content).Result;
             Console.WriteLine(response.StatusCode);
             Console.WriteLine(response.Content.ReadAsStringAsync().Result);
